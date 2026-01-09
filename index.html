@@ -1,36 +1,28 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Bố Khanh LE</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Galaxy - Bố Khanh Lê</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body class="dark">
-
-<header>
-  <div class="logo">Bố Khanh LE AI</div>
-  <div class="menu">
-    <button id="toggleTheme">🌙</button>
-    <button id="clearChat">🧹 Xóa Chat</button>
-  </div>
-</header>
-
-<main>
-  <div class="chat-container">
-    <div class="default-text">
-      <h1>ĐỊT CỤ NAM ĐÀO</h1>
-      <p>Hãy bắt đầu cuộc trò chuyện với BỐ KHANH LE.</p>
+<body>
+    <div id="chat-container">
+        <h3 style="color: white; text-align: center; padding: 10px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+            🌌 Galaxy Chatbot
+        </h3>
+        <div id="chat-box">
+            <div class="message bot-message">
+                <img src="gemini.png" class="avatar" alt="AI">
+                <div class="text">Con chào Bố Khanh Lê! Con có thể giúp gì cho bố ạ?</div>
+            </div>
+        </div>
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Nhắn tin cho con...">
+            <button onclick="sendMessage()">Gửi 🚀</button>
+        </div>
     </div>
-  </div>
 
-  <div class="input-area">
-    <textarea id="prompt" placeholder="Nhập câu hỏi của bạn tại đây..." rows="1"></textarea>
-    <button id="send-btn">➤</button>
-  </div>
-</main>
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
