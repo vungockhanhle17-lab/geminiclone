@@ -2,17 +2,17 @@ const express = require("express");
 const path = require("path");
 const useragent = require("express-useragent");
 
+// Nếu Node < 18 thì dùng:
+// const fetch = require("node-fetch");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+const GROK_API_KEY = process.env.GROK_API_KEY;
 
-// Middleware đọc user-agent
+// ===== BASIC SETUP =====
 app.use(useragent.express());
-
-// Parse json
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Public folder (html, css, js)
 app.use(express.static(path.join(__dirname)));
 
 // ===== LOG IP + DEVICE + BROWSER =====
@@ -39,26 +39,65 @@ app.use((req, res, next) => {
     next();
 });
 
-// ===== HOME PAGE =====
+// ===== HOME =====
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// ===== API CHAT (GIỮ NGUYÊN LUỒNG CHAT CỦA BẠN) =====
-// Nếu bạn đang có API chat riêng thì dán lại phần đó vào đây.
-// Ví dụ demo:
-app.post("/chat", async (req, res) => {
+// ===== CHAT ENDPOINT (GIỮ TÊN /ask-gemini) =====
+app.post("/ask-gemini", async (req, res) => {
     try {
-        const message = req.body.message;
+        if (!GROK_API_KEY) {
+            console.error("❌ Missing GROK_API_KEY");
+            return res.status(500).json({ reply: "Server thiếu API KEY." });
+        }
 
-        // TODO: GỌI API GROK / GEMINI CỦA BẠN Ở ĐÂY
-        // Đây chỉ là ví dụ test:
-        res.json({
-            reply: "Server đã nhận tin nhắn: " + message
+        const userMessage =
+            req.body.message ||
+            req.body.prompt ||
+            req.body.text ||
+            "";
+
+        if (!userMessage) {
+            return res.json({ reply: "Bạn chưa nhập nội dung." });
+        }
+
+        const response = await fetch("https://api.x.ai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${GROK_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: "grok-beta",
+                messages: [
+                    { role: "system", content: "You are a helpful assistant." },
+                    { role: "user", content: userMessage }
+                ],
+                temperature: 0.7
+            })
         });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("❌ Grok API error:", data);
+            return res.json({
+                reply: "AI đang bận hoặc lỗi API. Vui lòng thử lại."
+            });
+        }
+
+        const reply =
+            data.choices?.[0]?.message?.content ||
+            "AI không có phản hồi.";
+
+        res.json({ reply });
+
     } catch (err) {
-        console.error("Chat error:", err);
-        res.status(500).json({ error: "Server error" });
+        console.error("❌ Server error:", err);
+        res.status(500).json({
+            reply: "Server gặp lỗi. Vui lòng thử lại sau."
+        });
     }
 });
 
@@ -66,3 +105,4 @@ app.post("/chat", async (req, res) => {
 app.listen(PORT, () => {
     console.log("✅ Server running on port:", PORT);
 });
+
