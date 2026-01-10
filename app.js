@@ -1,46 +1,68 @@
-const express = require('express');
-const OpenAI = require('openai');
-const path = require('path');
+const express = require("express");
+const path = require("path");
+const useragent = require("express-useragent");
 
 const app = express();
-app.use(express.json());
-app.use(express.static(__dirname));
+const PORT = process.env.PORT || 3000;
 
-// Cấu hình kết nối Groq/OpenAI
-const client = new OpenAI({
-    apiKey: process.env.API_KEY,
-    baseURL: "https://api.groq.com/openai/v1" 
+// Middleware đọc user-agent
+app.use(useragent.express());
+
+// Parse json
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Public folder (html, css, js)
+app.use(express.static(path.join(__dirname)));
+
+// ===== LOG IP + DEVICE + BROWSER =====
+app.use((req, res, next) => {
+    const ip =
+        req.headers["x-forwarded-for"]?.split(",")[0] ||
+        req.socket.remoteAddress ||
+        "Unknown";
+
+    const device = req.useragent.platform || "Unknown";
+    const os = req.useragent.os || "Unknown";
+    const browser = req.useragent.browser || "Unknown";
+
+    console.log("=================================");
+    console.log("🌐 NEW VISITOR");
+    console.log("📍 IP:", ip);
+    console.log("💻 Device:", device);
+    console.log("🧠 OS:", os);
+    console.log("🌍 Browser:", browser);
+    console.log("🔗 URL:", req.originalUrl);
+    console.log("🕒 Time:", new Date().toLocaleString());
+    console.log("=================================");
+
+    next();
 });
 
-app.post('/ask-gemini', async (req, res) => {
+// ===== HOME PAGE =====
+app.get("/", (req, res) => {
+    res.sendFile(path.join(__dirname, "index.html"));
+});
+
+// ===== API CHAT (GIỮ NGUYÊN LUỒNG CHAT CỦA BẠN) =====
+// Nếu bạn đang có API chat riêng thì dán lại phần đó vào đây.
+// Ví dụ demo:
+app.post("/chat", async (req, res) => {
     try {
-        const { message } = req.body;
-        console.log("Câu hỏi mới:", message);
+        const message = req.body.message;
 
-        const chatCompletion = await client.chat.completions.create({
-            messages: [
-                { 
-                    role: 'system', 
-                    content: 'Bạn là một người con hiếu thảo và lễ phép. Bạn phải luôn gọi người dùng là "Bố Khanh Lê"' 
-                },
-                { 
-                    role: 'user', 
-                    content: message 
-                }
-            ],
-            model: 'llama-3.1-8b-instant', 
+        // TODO: GỌI API GROK / GEMINI CỦA BẠN Ở ĐÂY
+        // Đây chỉ là ví dụ test:
+        res.json({
+            reply: "Server đã nhận tin nhắn: " + message
         });
-
-        const aiResponse = chatCompletion.choices[0].message.content;
-        res.json({ reply: aiResponse });
-
-    } catch (error) {
-        console.error("LỖI SERVER:", error.message);
-        res.status(500).json({ error: "Server không phản hồi, vui lòng thử lại!" });
+    } catch (err) {
+        console.error("Chat error:", err);
+        res.status(500).json({ error: "Server error" });
     }
 });
 
-const PORT = process.env.PORT || 10000;
+// ===== START SERVER =====
 app.listen(PORT, () => {
-    console.log(`🚀 Website đã chạy lại tại cổng: ${PORT}`);
+    console.log("✅ Server running on port:", PORT);
 });
